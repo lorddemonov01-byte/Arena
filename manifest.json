@@ -4,8 +4,8 @@
   "version": "1.0.0",
   "action": {
     "title": "Лист Арена",
-    "icon": "icon.svg",
-    "popover": "index.html",
+    "icon": "https://lorddemonov01-byte.github.io/Arena/icon.svg",
+    "popover": "https://lorddemonov01-byte.github.io/Arena/index.html",
     "width": 450,
     "height": 700
   }
