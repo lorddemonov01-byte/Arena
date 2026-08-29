@@ -1,0 +1,12 @@
+{
+  "name": "Лист Персонажа Арена",
+  "version": "1.0.0",
+  "manifest_version": 1,
+  "action": {
+    "title": "Лист Арена",
+    "icon": "https://www.owlbear.rodeo/favicon.ico",
+    "popover": "index.html",
+    "width": 450,
+    "height": 700
+  }
+}
