@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Лист Персонажа — НРИ «АРЕНА»</title>
+<script src="https://unpkg.com/@owlbear-rodeo/sdk"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    background: #0f172a;
+    color: #f8fafc;
+    padding: 15px;
+    font-size: 14px;
+  }
+  .card {
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 12px;
+    padding: 16px;
+    max-width: 400px;
+    margin: 0 auto;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+  }
+  h2 {
+    color: #38bdf8;
+    font-size: 18px;
+    text-align: center;
+    margin-bottom: 12px;
+    border-bottom: 1px solid #334155;
+    padding-bottom: 6px;
+  }
+  .form-group { margin-bottom: 10px; }
+  label {
+    display: block;
+    font-size: 12px;
+    color: #94a3b8;
+    margin-bottom: 3px;
+    font-weight: 600;
+  }
+  input, select {
+    width: 100%;
+    padding: 8px 10px;
+    background: #0f172a;
+    border: 1px solid #475569;
+    border-radius: 6px;
+    color: #fff;
+    font-size: 13px;
+  }
+  input:focus, select:focus { border-color: #38bdf8; outline: none; }
+  .row { display: flex; gap: 8px; }
+  .row > div { flex: 1; }
+  .stats-preview {
+    background: #090d16;
+    border: 1px dashed #0284c7;
+    border-radius: 8px;
+    padding: 10px;
+    margin: 12px 0;
+  }
+  .stat-badge {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 4px;
+    font-size: 13px;
+  }
+  .stat-badge strong { color: #38bdf8; }
+  .btn {
+    width: 100%;
+    padding: 10px;
+    border: none;
+    border-radius: 6px;
+    font-weight: 700;
+    cursor: pointer;
+    font-size: 13px;
+    margin-top: 6px;
+  }
+  .btn-secondary { background: #334155; color: #f8fafc; }
+  .btn-secondary:hover { background: #475569; }
+  .btn-spawn { background: #16a34a; color: #fff; margin-top: 10px; }
+  .btn-spawn:hover { background: #15803d; }
+  .status-text { font-size: 11px; text-align: center; color: #64748b; margin-top: 6px; }
+</style>
+</head>
+<body>
+
+<div class="card">
+  <h2>ЛИСТ ПЕРСОНАЖА: АРЕНА</h2>
+
+  <div class="form-group">
+    <label>Имя клона / Игрока</label>
+    <input type="text" id="charName" value="Клон #1">
+  </div>
+
+  <div class="row form-group">
+    <div>
+      <label>Класс</label>
+      <select id="charClass" onchange="calculate()">
+        <option value="Воин">Воин</option>
+        <option value="Маг">Маг</option>
+      </select>
+    </div>
+    <div>
+      <label>Оружие / Заявка</label>
+      <select id="weapon">
+        <option value="K4">Кинжал (K4)</option>
+        <option value="K6">Короткий меч (K6)</option>
+        <option value="K8">Длинный меч (K8)</option>
+        <option value="K10">Магия / Копье (K10)</option>
+        <option value="K12">Тяжелый молот (K12)</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="form-group">
+    <button class="btn btn-secondary" onclick="roll2k6()">🎲 Бросить стартовые 2K6 статов</button>
+  </div>
+
+  <div class="row form-group">
+    <div>
+      <label>Физика</label>
+      <input type="number" id="phys" value="5" min="1" onchange="calculate()">
+    </div>
+    <div>
+      <label>Интеллект</label>
+      <input type="number" id="intel" value="5" min="1" onchange="calculate()">
+    </div>
+  </div>
+
+  <div class="row form-group">
+    <div>
+      <label>Накопленный Опыт (XP)</label>
+      <input type="number" id="xp" value="0" min="0" oninput="calculate()">
+    </div>
+    <div>
+      <label>Множитель смерти (×N)</label>
+      <input type="number" id="multiplier" value="1" min="1">
+    </div>
+  </div>
+
+  <div class="stats-preview">
+    <div class="stat-badge"><span>Текущий Уровень:</span> <strong id="outLevel">1 ур.</strong></div>
+    <div class="stat-badge"><span>Осталось до апгрейда:</span> <strong id="outNextXp">100 XP</strong></div>
+    <div class="stat-badge"><span>Макс. Здоровье (HP):</span> <strong id="outHp">16</strong></div>
+    <div class="stat-badge"><span>Базовая скорость:</span> <strong id="outSpeed">15 м</strong></div>
+    <div class="stat-badge"><span>Статус Ауры:</span> <strong id="outAura">Закрыта</strong></div>
+  </div>
+
+  <button class="btn btn-spawn" onclick="spawnTokenInOwlbear()">⚡ Спавнить фишку в Owlbear Rodeo</button>
+  <div class="status-text" id="status">Статус: Ожидание Owlbear SDK...</div>
+</div>
+
+<script>
+  let isObrReady = false;
+
+  if (window.OBR) {
+    OBR.onReady(() => {
+      isObrReady = true;
+      document.getElementById('status').innerText = 'Статус: Подключено к Owlbear Rodeo!';
+      document.getElementById('status').style.color = '#4ade80';
+    });
+  }
+
+  function roll2k6() {
+    const d1 = Math.floor(Math.random() * 6) + 1;
+    const d2 = Math.floor(Math.random() * 6) + 1;
+    const total = d1 + d2;
+    const half = Math.floor(total / 2);
+    document.getElementById('phys').value = half;
+    document.getElementById('intel').value = total - half;
+    calculate();
+    alert(`Выпало 2K6: ${d1} + ${d2} = ${total} очков!`);
+  }
+
+  function calculate() {
+    const phys = parseInt(document.getElementById('phys').value) || 0;
+    const intel = parseInt(document.getElementById('intel').value) || 0;
+    const xp = parseInt(document.getElementById('xp').value) || 0;
+    const charClass = document.getElementById('charClass').value;
+
+    // Шаги уровня: 100, 200, 300, 400, 500...
+    let level = 1;
+    let tempXp = xp;
+    while (tempXp >= level * 100) {
+      tempXp -= level * 100;
+      level++;
+    }
+    const xpForNextLevel = (level * 100) - tempXp;
+
+    document.getElementById('outLevel').innerText = level + ' ур.';
+    document.getElementById('outNextXp').innerText = xpForNextLevel + ' XP';
+
+    const hp = 10 + level + phys;
+    document.getElementById('outHp').innerText = hp;
+
+    const mod = charClass === 'Воин' ? phys : intel;
+    document.getElementById('outSpeed').innerText = (10 + mod) + ' м';
+
+    if (charClass === 'Воин' && phys > 10) {
+      document.getElementById('outAura').innerText = 'АКТИВНА';
+      document.getElementById('outAura').style.color = '#38bdf8';
+    } else {
+      document.getElementById('outAura').innerText = 'Закрыта';
+      document.getElementById('outAura').style.color = '#94a3b8';
+    }
+  }
+
+  async function spawnTokenInOwlbear() {
+    const name = document.getElementById('charName').value;
+    const hp = document.getElementById('outHp').innerText;
+    const level = document.getElementById('outLevel').innerText;
+    const phys = document.getElementById('phys').value;
+    const intel = document.getElementById('intel').value;
+    const charClass = document.getElementById('charClass').value;
+
+    if (!isObrReady || !window.OBR) {
+      alert('Запустите этот файл как Extension внутри Owlbear Rodeo!');
+      return;
+    }
+
+    const color = charClass === 'Воин' ? '#e11d48' : '#0284c7';
+
+    await OBR.scene.items.addItems([{
+      id: OBR.player.id + "_" + Date.now(),
+      type: "SHAPE",
+      shape: { type: "CIRCLE", width: 150, height: 150 },
+      position: { x: 0, y: 0 },
+      layer: "CHARACTER",
+      name: name,
+      fill: { color: color, opacity: 0.9 },
+      stroke: { color: "#ffffff", width: 4 },
+      text: { 
+        plainText: `${name} [${level}]\nHP: ${hp}/${hp}\nФИЗ:${phys} ИНТ:${intel}`, 
+        style: { fill: "#ffffff", fontSize: 16, fontWeight: "bold" } 
+      }
+    }]);
+
+    document.getElementById('status').innerText = 'Фишка персонажа создана на игровом поле!';
+  }
+
+  calculate();
+</script>
+</body>
+</html>
